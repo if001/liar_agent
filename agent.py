@@ -1,0 +1,78 @@
+import numpy as np
+from act import PlayerAct
+import math
+
+
+class Agent():
+    def __init__(self, act_num, state_num):
+        self.act_num = act_num
+        self.state_num = state_num
+        self.actor = [[[1.0 for i in range(act_num)] for j in range(
+            state_num[1])] for k in range(state_num[0])]
+
+        self.value = [[0 for i in range(state_num[1])]
+                      for j in range(state_num[0])]
+        self.td = 0
+
+        self.ALPHA = 0.8
+        self.BETA = 0.8
+        self.discount_rate = 0.8
+        self.reversed_c = 1.0
+
+    def softmax(self, v):
+        v = np.array(v[::])
+        return np.exp(v * self.reversed_c) / sum(np.exp(v * self.reversed_c))
+
+    def entropy(self, v):
+        v = np.array(v[::])
+        return -1 * sum(v * np.log2(v))
+
+    def act_constraints(self, p, state, block):
+        # 行動束縛
+        up = block[state[0] - 1][state[1]]
+        right = block[state[0]][state[1] + 1]
+        down = block[state[0] + 1][state[1]]
+        left = block[state[0]][state[1] - 1]
+        if up == 1:
+            p[0] = -10000000000.0
+        if right == 1:
+            p[1] = -10000000000.0
+        if down == 1:
+            p[2] = -10000000000.0
+        if left == 1:
+            p[3] = -10000000000.0
+        return p
+
+    def pub(self, status, block, advice=None):
+        __state = status.next_state[::]
+        __actor = self.actor[__state[0]][__state[1]][::]
+
+        if advice is not None:
+            __p = np.array(__actor) + np.array(advice) * \
+                self.entropy(self.softmax(__actor))
+        else:
+            __p = np.array(__actor)
+
+        __p = self.act_constraints(__p, __state, block)
+        policy = self.softmax(__p)
+        act = np.random.choice(self.act_num, 1, p=policy)[0]
+        return act
+
+    def renew_critic(self, status):
+        state = status.state
+        next_state = status.next_state
+        reward = status.reward
+
+        self.td = reward + self.discount_rate * \
+            self.value[next_state[0]][next_state[1]] - \
+            self.value[state[0]][state[1]]
+        self.value[state[0]][state[1]] += self.ALPHA * self.td
+
+    def renew_actor(self, status):
+        state = status.state[::]
+        act = status.act
+        self.actor[state[0]][state[1]][act] += self.BETA * self.td
+
+    def train(self, status):
+        self.renew_critic(status)
+        self.renew_actor(status)
