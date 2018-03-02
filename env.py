@@ -35,8 +35,10 @@ class Env():
             __next_state = [__state[0], __state[1] - 1]
 
         # # 移動先がブロックなら元いた場所に戻す
+        # is_hit_block = False
         # if self.block[__next_state[0]][__next_state[1]] == 1:
         #     __next_state = __state
+        #     is_hit_block = True
 
         self.stateQueue.push(__next_state)
         reward = self.get_reward(__next_state)

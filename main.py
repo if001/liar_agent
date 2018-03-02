@@ -1,7 +1,10 @@
 from agent import Agent
 from env import Env
 from act import LiarAct
+from act import PlayerAct
 from time import sleep
+
+import pylab as plt
 
 
 class Status():
@@ -36,40 +39,65 @@ def main():
     status = Status(state=start, act=0, reward=0, next_state=start)
     env = Env(status.state, status.next_state, block, start, goal)
     liar = Agent(act_num=4, state_num=state_num)
-
-    while(True):
+    step = 0
+    # while(True):
+    for _ in range(10000):
         status.act = liar.pub(status, block)
         status.state, status.next_state, status.reward = env.pub(status)
+        print(len(liar.goal_steps))
         env.debug()
         status.debug()
-
         liar.train(status)
+        step += 1
         if env.is_goal():
-            # init 処理
-            print("init")
             del status
             del env
             status = Status(state=start, act=0, reward=0, next_state=start)
             env = Env(status.state, status.next_state, block, start, goal)
-            sleep(1)
-    exit(0)
+            liar.goal_steps.append(step)
+            step = 0
+
+    t = range(len(liar.goal_steps))
+    plt.plot(t, liar.goal_steps, label="liar")
+
+    shortest_step = liar.goal_steps[-1]
+
     # playerの学習開始
     status = Status(state=start, act=0, reward=0, next_state=start)
     env = Env(status.state, status.next_state, block, start, goal)
     player = Agent(act_num=4, state_num=state_num)
+    step = 0
+    liar_reward = 0
+    for i in range(10000):
+        liar_act = liar.pub(status, block)
+        liar_act_vec = LiarAct.toVec(liar_act)
 
-    for i in range(10):
-        liar_act = liar.pub(status)
-        liar_act = LiarAct.toVec(liar_act)
-
-        status.act = player.pub(status, liar_act)
+        status.act = player.pub(status, block, liar_act_vec)
         status.state, status.next_state, status.reward = env.pub(status)
+        print(len(player.goal_steps))
         env.debug()
         status.debug()
+        print("liar", liar_act, "  player ", status.act)
         player.train(status)
+        player_act_vec = PlayerAct.toVec(status.act)
+        trust_degree = liar.cal_trust_degree(liar_act_vec, player_act_vec)
+        liar.train_liar(status, liar_reward, trust_degree)
+        if liar_reward > 0:
+            liar_reward = 0
+        step += 1
         if env.is_goal():
-            # init 処理
-            print("init")
+            del status
+            del env
+            status = Status(state=start, act=0, reward=0, next_state=start)
+            env = Env(status.state, status.next_state, block, start, goal)
+            player.goal_steps.append(step)
+            liar_reward = step - shortest_step
+            step = 0
+        key = input()
+
+    t = range(len(player.goal_steps))
+    plt.plot(t, player.goal_steps, label="player")
+    plt.show()
 
 
 if __name__ == "__main__":

@@ -8,6 +8,12 @@ class PlayerAct(Enum):
     down = 2
     left = 3
 
+    @staticmethod
+    def toVec(a):
+        vec = [0 for i in range(4)]
+        vec[a] = 1
+        return vec
+
 
 class LiarAct(Enum):
     up = 0
