@@ -3,7 +3,6 @@ from env import Env
 from act import LiarAct
 from act import PlayerAct
 from time import sleep
-
 import pylab as plt
 
 
@@ -57,8 +56,12 @@ def main():
             liar.goal_steps.append(step)
             step = 0
 
-    t = range(len(liar.goal_steps))
-    plt.plot(t, liar.goal_steps, label="liar")
+    with open("./pre_learning.txt", "o") as f:
+        f.writelines()
+
+    # i = int(len(liar.goal_steps) / 3)
+    # t = range(len(liar.goal_steps[:i]))
+    # plt.plot(t, liar.goal_steps[:i], label="liar", color="b")
 
     shortest_step = liar.goal_steps[-1]
 
@@ -81,9 +84,11 @@ def main():
         player.train(status)
         player_act_vec = PlayerAct.toVec(status.act)
         trust_degree = liar.cal_trust_degree(liar_act_vec, player_act_vec)
+
+        liar_reward = 0
+        if status.reward > 0:
+            liar_reward = step - shortest_step
         liar.train_liar(status, liar_reward, trust_degree)
-        if liar_reward > 0:
-            liar_reward = 0
         step += 1
         if env.is_goal():
             del status
@@ -91,13 +96,16 @@ def main():
             status = Status(state=start, act=0, reward=0, next_state=start)
             env = Env(status.state, status.next_state, block, start, goal)
             player.goal_steps.append(step)
-            liar_reward = step - shortest_step
-            step = 0
-        key = input()
 
-    t = range(len(player.goal_steps))
-    plt.plot(t, player.goal_steps, label="player")
-    plt.show()
+            step = 0
+        # key = input()
+    with open("./player.txt", "o") as f:
+        f.writelines()
+
+    # i = int(len(liar.goal_steps) / 3)
+    # t = range(len(player.goal_steps[:i]))
+    # plt.plot(t, player.goal_steps[:i], label="player", color="r")
+    # plt.show()
 
 
 if __name__ == "__main__":

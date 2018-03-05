@@ -82,6 +82,7 @@ class Agent():
         self.renew_actor(status)
 
     def train_liar(self, status, reward, trust_degree):
+        print("reward: ", reward, "trust_degree:", trust_degree)
         self.renew_critic_liar(status, reward, trust_degree)
         self.renew_actor(status)
 
@@ -95,7 +96,7 @@ class Agent():
         self.value[state[0]][state[1]] += self.ALPHA * self.td
 
     def cal_trust_degree(self, liar_act_vec, player_act_vec):
-        beta = 0.5
+        beta = 0.2
         # v1 = np.array(liar_act_vec)
         # v2 = np.array(player_act_vec)
         # cos = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
