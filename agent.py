@@ -17,13 +17,16 @@ class Agent():
         self.ALPHA = 0.8
         self.BETA = 0.8
         self.discount_rate = 0.8
-        self.reversed_c = 1.0
+        self.reversed_c = 0.7
+        self.td_rate = 0.2  # trust degree rate
 
         self.goal_steps = []
         self.trust_deg = 0  # ひとまず状態の関数にはしない
+        self.reward_hist = []
 
     def softmax(self, v):
         v = np.array(v[::])
+        # print(np.exp(v * self.reversed_c), sum(np.exp(v * self.reversed_c)))
         return np.exp(v * self.reversed_c) / sum(np.exp(v * self.reversed_c))
 
     def entropy(self, v):
@@ -71,19 +74,24 @@ class Agent():
             self.value[next_state[0]][next_state[1]] - \
             self.value[state[0]][state[1]]
         self.value[state[0]][state[1]] += self.ALPHA * self.td
+        if self.value[state[0]][state[1]] > 100:
+            self.value[state[0]][state[1]] = 100
 
     def renew_actor(self, status):
         state = status.state[::]
         act = status.act
         self.actor[state[0]][state[1]][act] += self.BETA * self.td
+        if self.actor[state[0]][state[1]][act] > 100:
+            self.actor[state[0]][state[1]][act] = 100
 
     def train(self, status):
         self.renew_critic(status)
         self.renew_actor(status)
 
-    def train_liar(self, status, reward, trust_degree):
-        print("reward: ", reward, "trust_degree:", trust_degree)
-        self.renew_critic_liar(status, reward, trust_degree)
+    def train_liar(self, status, reward):
+        # print("reward: ", reward, "trust_degree:", trust_degree)
+        # self.renew_critic_liar(status, reward, trust_degree)
+        self.renew_critic(status)
         self.renew_actor(status)
 
     def renew_critic_liar(self, status, reward, trust_degree):
@@ -94,9 +102,11 @@ class Agent():
             self.value[next_state[0]][next_state[1]] - \
             self.value[state[0]][state[1]]
         self.value[state[0]][state[1]] += self.ALPHA * self.td
+        if self.value[state[0]][state[1]] > 100:
+            self.value[state[0]][state[1]] = 100
 
     def cal_trust_degree(self, liar_act_vec, player_act_vec):
-        beta = 0.2
+        beta = 0.09
         # v1 = np.array(liar_act_vec)
         # v2 = np.array(player_act_vec)
         # cos = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
@@ -104,7 +114,7 @@ class Agent():
             cos = 1.0
         else:
             cos = -1.0
-        print("cos", cos)
+        # print("cos", cos)
         self.trust_deg += beta * cos
-        print("trust", self.trust_deg)
+        # print("trust", self.trust_deg)
         return self.trust_deg

@@ -57,7 +57,10 @@ class Env():
         else:
             return False
 
-    def debug(self):
+    def debug(self, d_flag=False):
+        if d_flag is False:
+            return -1
+
         for x in range(len(self.block)):
             for y in range(len(self.block[0])):
                 if self.block[x][y] == 1:
